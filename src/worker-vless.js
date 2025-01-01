@@ -2,7 +2,6 @@
 // @ts-ignore
 import { connect } from 'cloudflare:sockets';
 
-// Basic encoding/decoding utilities
 function encodeSecure(str) {
     return btoa(str.split('').reverse().join(''));
 }
@@ -13,16 +12,18 @@ function decodeSecure(encoded) {
 
 const ENCODED = {
     PROTOCOL: 'c3NlbHY=', 
-    NETWORK: 'c3c=',  
+    NETWORK: 'c3c=', 
     TYPE: 'YW5haWQ=', 
-    STREAM: 'bWFlcnRz' 
+    STREAM: 'bWFlcnRz' , 
+    V2RAY: 'bGl2RVJpTg==' 
 };
 
 // To generate your own UUID: https://www.uuidgenerator.net/
 // [Windows] Press "Win + R", input cmd and run:  Powershell -NoExit -Command "[guid]::NewGuid()"
 let userCode = '10e894da-61b1-4998-ac2b-e9ccb6af9d30';
 
-let proxyIP = 'turk.radicalization.ir';// OR use 'nima.nscl.ir';  Find proxyIP: https://github.com/NiREvil/vless/blob/main/sub/ProxyIP.md
+// Find proxyIP: https://github.com/NiREvil/vless/blob/main/sub/ProxyIP.md
+let proxyIP = 'turk.radicalization.ir';// OR use 'nima.nscl.ir 
 
 if (!isValidUserCode(userCode)) {
     throw new Error('user code is not valid');
@@ -415,18 +416,29 @@ function getDianaConfig(userCode, hostName) {
     const config = 
     `${protocol}://${userCode}@${hostName}:443` +
     `?encryption=none&security=tls&sni=${hostName}` +
-    `&fp=chrome&type=${networkType}&host=${hostName}` +
-    `&alpn=h3&path=%2Fassets%2Fimages#${hostName}`;
+    `&fp=randomized&type=${networkType}&host=${hostName}` +
+    `&alpn=http%2F1.1&path=%2Fapi%2Fassets#${hostName}`;
 
     return `
-################################################################
-Secure Stream Configuration
----------------------------------------------------------------
+
+
+${atob('VkxFU1MgcHJvdG9jb2wgY29uZmlndXJhdGlvbi4gU3VpdGFibGUgZm9yIGNsaWVudHMgc3VwcG9ydGluZyBWTEVTUw==')}
+-------------------------------------------------------------------
+
 ${config}
----------------------------------------------------------------
-################################################################
-Client Configuration
----------------------------------------------------------------
+
+
+-----------------------------------------------------
+${atob('dGVsZWdyYW0gY2g6Cmh0dHBzOi8vdC5tZS9zL0ZfTmlSRXZpbA==')}
+${atob('c291cmNlIGNvZGU6Cmh0dHBzOi8vZ2l0aHViLmNvbS9OaVJFdmlsL3ppemlmbg==')}
+-----------------------------------------------------
+
+
+
+
+${atob('Q0xBU0ggcHJvdG9jb2wgY29uZmlndXJhdGlvbi4gQmVzdCBmb3IgQ2xhc2ggdXNlcnMgb24gbW9iaWxlIGRldmljZXMu')}
+---------------------------------------------------------------------
+
 - type: ${protocol}
   name: ${hostName}
   server: ${hostName}
@@ -441,11 +453,10 @@ Client Configuration
     path: "/?ed=2048"
     headers:
       host: ${hostName}
+
+
 ---------------------------------------------------------------
-Telegram channel: https://t.me/F_NiREvil
-Our github account: https://github.com/NiREvil
----------------------------------------------------------------
-################################################################
+
 `;
 }
 
