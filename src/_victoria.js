@@ -1,4 +1,3 @@
-
 // <!--GAMFC-->Last update 2024-12-10 01:58:26 UTC,, version base on commit cfbe5e3cd129d66cf45a5d1248d286d5e9f16345<!--GAMFC-END-->.
 // @ts-nocheck
 import { connect } from 'cloudflare:sockets';
@@ -21,7 +20,6 @@ const ENCODED = {
 };
 
 // To generate your own UUID: https://www.uuidgenerator.net/
-// [Windows] Press "Win + R", input cmd and run:  Powershell -NoExit -Command "[guid]::NewGuid()"
 let userCode = '10e894da-61b1-4998-ac2b-e9ccb6af9d30';
 
 // Find proxyIP: https://github.com/NiREvil/vless/blob/main/sub/ProxyIP.md
@@ -507,29 +505,29 @@ function getDianaConfig(userCode, hostName) {
     
     const freedomConfig = 
     `${protocol}://${userCode}@${hostName}:443` +
-    `?encryption=none&security=tls&sni=${hostName}` +
-    `&fp=chrome&type=${networkType}&host=${hostName}` +
-    `&alpn=h3&path=%2Fassets%2Fimages&ed=2048&eh=Sec-WebSocket-Protocol#${hostName}`;
+	`?path=%2Fassets%2Fimages&eh=Sec-WebSocket-Protocol` +
+	`&ed=2560&encryption=none&host=${hostName}&type=${networkType}` +
+ 	`&security=tls&sni=${hostName}&fp=randomized&alpn=h3#${hostName}`;
 
     const dreamConfig = 
     `${protocol}://${userCode}@${hostName}:443` +
-    `?encryption=none&security=tls&sni=${hostName}` +
-    `&fp=chrome&type=${networkType}&host=${hostName}` +
-    `&alpn=h2%2Chttp%2F1.1&path=%2Fassets%2Fimages%3Fed%3D2048#${hostName}`;
+	`?path=%2Fassets%3Fed%3D2048&encryption=none&host=${hostName}` +
+	`&type=${networkType}&security=tls&sni=${hostName}&fp=chrome` +
+	`&alpn=h2,http/1.1#${hostName}`;
 
 return `
 
 ⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑
 ${atob('VkxFU1MgY29uZmlnIGZvciB2MnJheU5HLCBIaWRkaWZ5LCBOaWthL01haHNhTkcsIFN0cmVpc2FuZCwgTmVrb3JheSAoWHJheSk=')}   ⁂
 *******************************************************************************
-${freedomConfig}
+${dreamConfig}
 
 
 
 ⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑
 ${atob('VkxFU1MgY29uZmlndXJhdGlvbiBmb3IgTmVrb2JveCwgTmVrb3JheSAoc2luZ2JveCksIEthcmluZyAuLi4=')}            ⁂
 ****************************************************************************
-${dreamConfig}
+${freedomConfig}
 
 
 
