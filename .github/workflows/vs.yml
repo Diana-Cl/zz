@@ -1,0 +1,24 @@
+name: Add Version Comment
+
+on:
+
+  push:
+    branches: [main]
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  version-comment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Modify version victoria.js
+        uses: jaywcjlove/github-action-modify-file-content@main
+        with:
+          path: src/_victoria.js
+          body: "Last update {{date: +%a, %d %b %y, %H:%M}} UTC - We are all REvil, version base on commit ${{ github.sha }} "
+          message: "Version Updated"
