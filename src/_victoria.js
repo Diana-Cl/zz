@@ -511,23 +511,17 @@ function getDianaConfig(userCode, hostName) {
 
     return `
 
-
+-------------------------------------------------------------------
 ${atob('VkxFU1MgcHJvdG9jb2wgY29uZmlndXJhdGlvbi4gU3VpdGFibGUgZm9yIGNsaWVudHMgc3VwcG9ydGluZyBWTEVTUw==')}
 -------------------------------------------------------------------
-
 ${config}
 
 
------------------------------------------------------
-${atob('dGVsZWdyYW0gY2g6Cmh0dHBzOi8vdC5tZS9zL0ZfTmlSRXZpbA==')}
-${atob('c291cmNlIGNvZGU6Cmh0dHBzOi8vZ2l0aHViLmNvbS9OaVJFdmlsL3ppemlmbg==')}
------------------------------------------------------
 
 
-
+---------------------------------------------------------------------
 ${atob('Q0xBU0ggcHJvdG9jb2wgY29uZmlndXJhdGlvbi4gQmVzdCBmb3IgQ2xhc2ggdXNlcnMgb24gbW9iaWxlIGRldmljZXMu')}
 ---------------------------------------------------------------------
-
 - type: ${protocol}
   name: ${hostName}
   server: ${hostName}
@@ -544,8 +538,12 @@ ${atob('Q0xBU0ggcHJvdG9jb2wgY29uZmlndXJhdGlvbi4gQmVzdCBmb3IgQ2xhc2ggdXNlcnMgb24g
       host: ${hostName}
 
 
----------------------------------------------------------------
 
+
+------------------------------------------------
+'${atob('VEcgY2hhbm5lbDogaHR0cHM6Ly90Lm1lL3MvRl9OaVJFdmls')}'
+'${atob('U3JjIGNvZGU6IGh0dHBzOi8vZ2l0aHViLmNvbS9OaVJFdmlsL3ppemlmbg==')}'
+------------------------------------------------
 `;
 }
 
