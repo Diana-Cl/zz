@@ -2,6 +2,7 @@
 // @ts-ignore
 import { connect } from 'cloudflare:sockets';
 
+// Basic encoding/decoding utilities
 function encodeSecure(str) {
     return btoa(str.split('').reverse().join(''));
 }
@@ -10,12 +11,12 @@ function decodeSecure(encoded) {
     return atob(encoded).split('').reverse().join('');
 }
 
+// Encoded constants
 const ENCODED = {
-    PROTOCOL: 'c3NlbHY=', 
-    NETWORK: 'c3c=', 
-    TYPE: 'YW5haWQ=', 
-    STREAM: 'bWFlcnRz' , 
-    V2RAY: 'bGl2RVJpTg==' 
+    PROTOCOL: 'c3NlbHY=', // vless reversed + base64
+    NETWORK: 'c3c=',      // ws reversed + base64
+    TYPE: 'YW5haWQ=',     // diana reversed + base64
+    STREAM: 'bWFlcnRz'    // stream reversed + base64
 };
 
 // To generate your own UUID: https://www.uuidgenerator.net/
@@ -30,6 +31,12 @@ if (!isValidUserCode(userCode)) {
 }
 
 export default {
+    	/**
+	 * @param {import("@cloudflare/workers-types").Request} request
+	 * @param {{UUID: string, PROXYIP: string}} env
+	 * @param {import("@cloudflare/workers-types").ExecutionContext} ctx
+	 * @returns {Promise<Response>}
+	 */
     async fetch(request, env, ctx) {
         try {
             userCode = env.UUID || userCode;
@@ -62,7 +69,14 @@ export default {
     },
 };
 
+
+/**
+ * 
+ * @param {import("@cloudflare/workers-types").Request} request
+ */
 async function streamOverWSHandler(request) {
+    /** @type {import("@cloudflare/workers-types").WebSocket[]} */
+	// @ts-ignore
     const webSocketPair = new WebSocketPair();
     const [client, webSocket] = Object.values(webSocketPair);
 
@@ -70,19 +84,20 @@ async function streamOverWSHandler(request) {
 
     let address = '';
     let portWithRandomLog = '';
-    const log = (info, event) => {
+    const log = (/** @type {string} */ info, /** @type {string | undefined} */ event) => {
         console.log(`[${address}:${portWithRandomLog}] ${info}`, event || '');
     };
     const earlyDataHeader = request.headers.get('sec-websocket-protocol') || '';
 
     const readableWebSocketStream = makeReadableWebSocketStream(webSocket, earlyDataHeader, log);
 
+    /** @type {{ value: import("@cloudflare/workers-types").Socket | null}}*/
     let remoteSocketWapper = {
         value: null,
     };
     let udpStreamWrite = null;
     let isDns = false;
-
+    // ws --> remote
     readableWebSocketStream.pipeTo(new WritableStream({
         async write(chunk, controller) {
             if (isDns && udpStreamWrite) {
@@ -109,15 +124,18 @@ async function streamOverWSHandler(request) {
             portWithRandomLog = `${portRemote}--${Math.random()} ${isUDP ? 'udp ' : 'tcp '}`;
             
             if (hasError) {
-                throw new Error(message);
-                return;
+                // controller.error(message);
+				throw new Error(message); // cf seems has bug, controller.error will not end stream
+				// webSocket.close(1000, message);
+				return;
             }
-
+            // if UDP but port not DNS port, close it
             if (isUDP) {
                 if (portRemote === 53) {
                     isDns = true;
                 } else {
-                    throw new Error('UDP proxy only enable for DNS which is port 53');
+                    // controller.error('UDP proxy only enable for DNS which is port 53');
+                    throw new Error('UDP proxy only enable for DNS which is port 53');// cf seems has bug, controller.error will not end stream
                     return;
                 }
             }
@@ -125,6 +143,7 @@ async function streamOverWSHandler(request) {
             const streamResponseHeader = new Uint8Array([streamVersion[0], 0]);
             const rawClientData = chunk.slice(rawDataIndex);
 
+            // TODO: support udp here when cf runtime has udp support
             if (isDns) {
                 const { write } = await handleUDPOutBound(webSocket, streamResponseHeader, log);
                 udpStreamWrite = write;
@@ -145,10 +164,17 @@ async function streamOverWSHandler(request) {
 
     return new Response(null, {
         status: 101,
+        // @ts-ignore
         webSocket: client,
     });
 }
 
+/**
+ * 
+ * @param {import("@cloudflare/workers-types").WebSocket} webSocketServer
+ * @param {string} earlyDataHeader for ws 0rtt
+ * @param {(info: string)=> void} log for ws 0rtt
+ */
 function makeReadableWebSocketStream(webSocketServer, earlyDataHeader, log) {
     let readableStreamCancel = false;
     const stream = new ReadableStream({
@@ -160,7 +186,10 @@ function makeReadableWebSocketStream(webSocketServer, earlyDataHeader, log) {
                 const message = event.data;
                 controller.enqueue(message);
             });
-
+            
+            // The event means that the client closed the client -> server stream.
+			// However, the server -> client stream is still open until you call close() on the server side.
+			// The WebSocket protocol says that a separate close message must be sent in each direction to fully close the socket.
             webSocketServer.addEventListener('close', () => {
                 safeCloseWebSocket(webSocketServer);
                 if (readableStreamCancel) {
@@ -168,7 +197,8 @@ function makeReadableWebSocketStream(webSocketServer, earlyDataHeader, log) {
                 }
                 controller.close();
             });
-
+            // client send close, need close server
+			// if stream is cancel, skip controller.close
             webSocketServer.addEventListener('error', (err) => {
                 log('webSocketServer has error');
                 controller.error(err);
@@ -183,9 +213,14 @@ function makeReadableWebSocketStream(webSocketServer, earlyDataHeader, log) {
         },
 
         pull(controller) {
+            // if ws can stop read if stream is full, we can implement backpressure
+			// https://streams.spec.whatwg.org/#example-rs-push-backpressure
         },
-        
+
         cancel(reason) {
+            // 1. pipe WritableStream has error, this cancel will called, so ws handle server close into here
+			// 2. if readableStream is cancel, all controller.close/enqueue need skip,
+			// 3. but from testing controller.error still work even if readableStream is cancel
             if (readableStreamCancel) {
                 return;
             }
@@ -198,6 +233,15 @@ function makeReadableWebSocketStream(webSocketServer, earlyDataHeader, log) {
     return stream;
 }
 
+// https://xtls.github.io/development/protocols/vless.html
+// https://github.com/zizifn/excalidraw-backup/blob/main/v2ray-protocol.excalidraw
+
+/**
+ * 
+ * @param { ArrayBuffer} vlessBuffer 
+ * @param {string} userID 
+ * @returns 
+ */
 function processStreamHeader(chunk, userCode) {
     if (chunk.byteLength < 24) {
         return {
@@ -221,9 +265,12 @@ function processStreamHeader(chunk, userCode) {
         };
     }
 
-    const optLength = new Uint8Array(chunk.slice(17, 18))[0];
+    const optLength = new Uint8Array(chunk.slice(17, 18))[0];//skip opt for now
     const command = new Uint8Array(chunk.slice(18 + optLength, 18 + optLength + 1))[0];
 
+    // 0x01 TCP
+	// 0x02 UDP
+	// 0x03 MUX
     if (command === 1) {
     } else if (command === 2) {
         isUDP = true;
@@ -236,10 +283,13 @@ function processStreamHeader(chunk, userCode) {
 
     const portIndex = 18 + optLength + 1;
     const portBuffer = chunk.slice(portIndex, portIndex + 2);
-    const portRemote = new DataView(portBuffer).getUint16(0);
+    const portRemote = new DataView(portBuffer).getUint16(0);// port is big-Endian in raw data etc 80 == 0x005d
 
     let addressIndex = portIndex + 2;
     const addressBuffer = new Uint8Array(chunk.slice(addressIndex, addressIndex + 1));
+    // 1--> ipv4  addressLength =4
+	// 2--> domain name addressLength=addressBuffer[1]
+	// 3--> ipv6  addressLength =16
     const addressType = addressBuffer[0];
     let addressLength = 0;
     let addressValueIndex = addressIndex + 1;
@@ -258,11 +308,12 @@ function processStreamHeader(chunk, userCode) {
         case 3:
             addressLength = 16;
             const dataView = new DataView(chunk.slice(addressValueIndex, addressValueIndex + addressLength));
-            const ipv6 = [];
+            const ipv6 = [];// 2001:0db8:85a3:0000:0000:8a2e:0370:7334
             for (let i = 0; i < 8; i++) {
                 ipv6.push(dataView.getUint16(i * 2).toString(16));
             }
             addressValue = ipv6.join(':');
+            // seems no need add [] for ipv6
             break;
         default:
             return {
@@ -289,8 +340,21 @@ function processStreamHeader(chunk, userCode) {
     };
 }
 
+/**
+ * Handles outbound TCP connections.
+ *
+ * @param {any} remoteSocket 
+ * @param {string} addressRemote The remote address to connect to.
+ * @param {number} portRemote The remote port to connect to.
+ * @param {Uint8Array} rawClientData The raw client data to write.
+ * @param {import("@cloudflare/workers-types").WebSocket} webSocket The WebSocket to pass the remote socket to.
+ * @param {Uint8Array} vlessResponseHeader The VLESS response header.
+ * @param {function} log The logging function.
+ * @returns {Promise<void>} The remote socket.
+ */
 async function handleTCPOutBound(remoteSocket, addressRemote, portRemote, rawClientData, webSocket, streamResponseHeader, log) {
     async function connectAndWrite(address, port) {
+        /** @type {import("@cloudflare/workers-types").Socket} */
         const tcpSocket = connect({
             hostname: address,
             port: port,
@@ -298,13 +362,14 @@ async function handleTCPOutBound(remoteSocket, addressRemote, portRemote, rawCli
         remoteSocket.value = tcpSocket;
         log(`connected to ${address}:${port}`);
         const writer = tcpSocket.writable.getWriter();
-        await writer.write(rawClientData);
+        await writer.write(rawClientData); // first write, nomal is tls client hello
         writer.releaseLock();
         return tcpSocket;
     }
-
+    // if the cf connect tcp socket have no incoming data, we retry to redirect ip
     async function retry() {
         const tcpSocket = await connectAndWrite(proxyIP || addressRemote, portRemote)
+        // no matter retry success or not, close websocket
         tcpSocket.closed.catch(error => {
             console.log('retry tcpSocket closed error', error);
         }).finally(() => {
@@ -312,7 +377,8 @@ async function handleTCPOutBound(remoteSocket, addressRemote, portRemote, rawCli
         })
         remoteSocketToWS(tcpSocket, webSocket, streamResponseHeader, null, log);
     }
-
+    // when remoteSocket is ready, pass to websocket
+	// remote--> ws
     const tcpSocket = await connectAndWrite(addressRemote, portRemote);
     remoteSocketToWS(tcpSocket, webSocket, streamResponseHeader, retry, log);
 }
@@ -355,13 +421,20 @@ async function remoteSocketToWS(remoteSocket, webSocket, streamResponseHeader, r
         retry();
     }
 }
-
+/**
+ * 
+ * @param {import("@cloudflare/workers-types").WebSocket} webSocket 
+ * @param {ArrayBuffer} vlessResponseHeader 
+ * @param {(string)=> void} log 
+ */
 async function handleUDPOutBound(webSocket, streamResponseHeader, log) {
     let isHeaderSent = false;
 
     const transformStream = new TransformStream({
         start(controller) {},
         transform(chunk, controller) {
+            // udp message 2 byte is the the length of udp data
+			// TODO: this should have bug, beacsue maybe udp chunk can be in two websocket message
             for (let index = 0; index < chunk.byteLength;) {
                 const lengthBuffer = chunk.slice(index, index + 2);
                 const udpPakcetLength = new DataView(lengthBuffer).getUint16(0);
@@ -372,7 +445,8 @@ async function handleUDPOutBound(webSocket, streamResponseHeader, log) {
         },
         flush(controller) {}
     });
-
+    
+    // only handle dns udp for now
     transformStream.readable.pipeTo(new WritableStream({
         async write(chunk) {
             const resp = await fetch('https://1.1.1.1/dns-query', {
@@ -384,6 +458,7 @@ async function handleUDPOutBound(webSocket, streamResponseHeader, log) {
             })
             const dnsQueryResult = await resp.arrayBuffer();
             const udpSize = dnsQueryResult.byteLength;
+            // console.log([...new Uint8Array(dnsQueryResult)].map((x) => x.toString(16)));
             const udpSizeBuffer = new Uint8Array([(udpSize >> 8) & 0xff, udpSize & 0xff]);
             
             if (webSocket.readyState === WS_READY_STATE_OPEN) {
@@ -403,12 +478,27 @@ async function handleUDPOutBound(webSocket, streamResponseHeader, log) {
     const writer = transformStream.writable.getWriter();
 
     return {
+        /**
+		 * 
+		 * @param {Uint8Array} chunk 
+		 */
         write(chunk) {
             writer.write(chunk);
         }
     };
 }
 
+/**
+ *
+ * We are all REvil
+ *
+ * [js-sha256]{@link https://github.com/emn178/js-sha256}
+ * @version 0.14.0 ()
+ * @description This code is based on the js-sha256 project, with the addition of the SHA-224 hash algorithm implementation.
+ * @author Chen, Yi-Cyuan [emn178@gmail.com]
+ * @copyright Chen, Yi-Cyuan 2014-2024
+ * @license MIT
+ */
 function getDianaConfig(userCode, hostName) {
     const protocol = decodeSecure(ENCODED.PROTOCOL);
     const networkType = decodeSecure(ENCODED.NETWORK);
@@ -432,7 +522,6 @@ ${config}
 ${atob('dGVsZWdyYW0gY2g6Cmh0dHBzOi8vdC5tZS9zL0ZfTmlSRXZpbA==')}
 ${atob('c291cmNlIGNvZGU6Cmh0dHBzOi8vZ2l0aHViLmNvbS9OaVJFdmlsL3ppemlmbg==')}
 -----------------------------------------------------
-
 
 
 
@@ -460,6 +549,10 @@ ${atob('Q0xBU0ggcHJvdG9jb2wgY29uZmlndXJhdGlvbi4gQmVzdCBmb3IgQ2xhc2ggdXNlcnMgb24g
 `;
 }
 
+/**
+ * This is not real UUID validation
+ * @param {string} uuid 
+ */
 function isValidUserCode(code) {
     const codeRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return codeRegex.test(code);
@@ -481,7 +574,10 @@ function base64ToArrayBuffer(base64Str) {
 
 const WS_READY_STATE_OPEN = 1;
 const WS_READY_STATE_CLOSING = 2;
-
+/**
+ * Normally, WebSocket will not has exceptions when close.
+ * @param {import("@cloudflare/workers-types").WebSocket} socket
+ */
 function safeCloseWebSocket(socket) {
     try {
         if (socket.readyState === WS_READY_STATE_OPEN || socket.readyState === WS_READY_STATE_CLOSING) {
