@@ -505,47 +505,57 @@ function getDianaConfig(userCode, hostName) {
     const protocol = decodeSecure(ENCODED.PROTOCOL);
     const networkType = decodeSecure(ENCODED.NETWORK);
     
-    const config = 
+    const freedomConfig = 
     `${protocol}://${userCode}@${hostName}:443` +
     `?encryption=none&security=tls&sni=${hostName}` +
-    `&type=${networkType}&host=${hostName}&alpn=http%2F1.1` +
-    `&path=%2Fapi%2Fassets&ed=2560&eh=Sec-WebSocket-Protocol&fp=chrome#${hostName}`;
+    `&fp=chrome&type=${networkType}&host=${hostName}` +
+    `&alpn=h3&path=%2Fassets%2Fimages&ed=2048&eh=Sec-WebSocket-Protocol#${hostName}`;
 
-    return `
+    const dreamConfig = 
+    `${protocol}://${userCode}@${hostName}:443` +
+    `?encryption=none&security=tls&sni=${hostName}` +
+    `&fp=chrome&type=${networkType}&host=${hostName}` +
+    `&alpn=h2%2Chttp%2F1.1&path=%2Fassets%2Fimages%3Fed%3D2048#${hostName}`;
 
--------------------------------------------------------------------
-${atob('VkxFU1MgcHJvdG9jb2wgY29uZmlndXJhdGlvbi4gU3VpdGFibGUgZm9yIGNsaWVudHMgc3VwcG9ydGluZyBWTEVTUw==')}
--------------------------------------------------------------------
-${config}
+return `
+
+⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑
+${atob('VkxFU1MgY29uZmlnIGZvciB2MnJheU5HLCBIaWRkaWZ5LCBOaWthL01haHNhTkcsIFN0cmVpc2FuZCwgTmVrb3JheSAoWHJheSk=')}   ⁂
+*******************************************************************************
+${freedomConfig}
 
 
 
+⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑
+${atob('VkxFU1MgY29uZmlndXJhdGlvbiBmb3IgTmVrb2JveCwgTmVrb3JheSAoc2luZ2JveCksIEthcmluZyAuLi4=')}            ⁂
+****************************************************************************
+${dreamConfig}
 
----------------------------------------------------------------------
-${atob('Q0xBU0ggcHJvdG9jb2wgY29uZmlndXJhdGlvbi4gQmVzdCBmb3IgQ2xhc2ggdXNlcnMgb24gbW9iaWxlIGRldmljZXMu')}
----------------------------------------------------------------------
+
+
+⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑
+${atob('Q0xBU0ggcHJvdG9jb2wgY29uZmlndXJhdGlvbi4gQmVzdCBmb3IgQ2xhc2ggdXNlcnMgb24gbW9iaWxlIGRldmljZXMu')}     ⁂
+****************************************************************************
 - type: ${protocol}
-  name: ${hostName}
-  server: ${hostName}
-  port: 443
-  uuid: ${userCode}
-  network: ${networkType}
-  tls: true
-  udp: false
-  sni: ${hostName}
-  client-fingerprint: chrome
-  ${networkType}-opts:
+name: ${hostName}
+server: ${hostName}
+port: 443
+uuid: ${userCode}
+network: ${networkType}
+tls: true
+udp: false
+sni: ${hostName}
+client-fingerprint: chrome
+${networkType}-opts:
     path: "/?ed=2048"
     headers:
-      host: ${hostName}
+    host: ${hostName}
 
 
-
-
-------------------------------------------------
-'${atob('VEcgY2hhbm5lbDogaHR0cHM6Ly90Lm1lL3MvRl9OaVJFdmls')}'
-'${atob('U3JjIGNvZGU6IGh0dHBzOi8vZ2l0aHViLmNvbS9OaVJFdmlsL3ppemlmbg==')}'
-------------------------------------------------
+⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑⁑
+${atob('VEcgY2hhbm5lbDogaHR0cHM6Ly90Lm1lL3MvRl9OaVJFdmls')}        ⁂
+${atob('U3JjIGNvZGU6IGh0dHBzOi8vZ2l0aHViLmNvbS9OaVJFdmlsL3ppemlmbg==')} ⁂
+**********************************************
 `;
 }
 
