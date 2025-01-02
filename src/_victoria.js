@@ -1,5 +1,6 @@
+
 // <!--GAMFC-->Last update 2024-12-10 01:58:26 UTC,, version base on commit cfbe5e3cd129d66cf45a5d1248d286d5e9f16345<!--GAMFC-END-->.
-// @ts-ignore
+// @ts-nocheck
 import { connect } from 'cloudflare:sockets';
 
 // Basic encoding/decoding utilities
@@ -46,14 +47,15 @@ export default {
                 const url = new URL(request.url);
                 switch (url.pathname) {
                     case '/':
-                        return new Response(JSON.stringify(request.cf), { status: 200 });
+                        return new Response(JSON.stringify(request.cf, null, 4), {
+                            status: 200, 
+                            headers: { "Content-Type": "application/json;charset=utf-8"},
+                        });
                     case `/${userCode}`: {
                         const streamConfig = getDianaConfig(userCode, request.headers.get('Host'));
                         return new Response(`${streamConfig}`, {
                             status: 200,
-                            headers: {
-                                "Content-Type": "text/plain;charset=utf-8",
-                            }
+                            headers: {"Content-Type": "text/plain;charset=utf-8",}
                         });
                     }
                     default:
@@ -68,7 +70,6 @@ export default {
         }
     },
 };
-
 
 /**
  * 
@@ -421,6 +422,7 @@ async function remoteSocketToWS(remoteSocket, webSocket, streamResponseHeader, r
         retry();
     }
 }
+
 /**
  * 
  * @param {import("@cloudflare/workers-types").WebSocket} webSocket 
@@ -506,8 +508,8 @@ function getDianaConfig(userCode, hostName) {
     const config = 
     `${protocol}://${userCode}@${hostName}:443` +
     `?encryption=none&security=tls&sni=${hostName}` +
-    `&fp=randomized&type=${networkType}&host=${hostName}` +
-    `&alpn=http%2F1.1&path=%2Fapi%2Fassets#${hostName}`;
+    `&type=${networkType}&host=${hostName}&alpn=http%2F1.1` +
+    `&path=%2Fapi%2Fassets&ed=2560&eh=Sec-WebSocket-Protocol&fp=chrome#${hostName}`;
 
     return `
 
